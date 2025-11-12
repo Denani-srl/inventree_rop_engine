@@ -30,9 +30,23 @@ Detailed ROP metrics displayed on each part page:
 
 ## Installation
 
-### ⚠️ IMPORTANT: Build Frontend First!
+### 🚨 CRITICAL: Build Frontend First!
 
-**You MUST build the frontend before installing the plugin**, otherwise pip installation will fail because the static files won't exist.
+**⚠️ YOU MUST BUILD THE FRONTEND BEFORE INSTALLING THE PLUGIN ⚠️**
+
+The plugin **WILL NOT WORK** without building the frontend first. Pip installation may succeed, but the plugin will be completely non-functional without the static JavaScript files.
+
+**Quick Build (Windows):**
+```powershell
+cd inventreeropengine\frontend
+npm install
+npm run build
+```
+
+Or use the automated build script:
+```powershell
+.\build.ps1
+```
 
 ### Prerequisites
 - InvenTree 0.18.0 or later
