@@ -140,7 +140,7 @@ class ROPSuggestionPlugin(InvenTreePlugin, AppMixin, SettingsMixin, UrlsMixin, U
                     'key': 'rop-urgent-suggestions',
                     'title': 'Urgent Reorder Suggestions',
                     'description': 'Parts requiring immediate procurement action',
-                    'source': self.plugin_static_file('rop_dashboard.js') + ':renderDashboardItem',
+                    'source': self.plugin_static_file('rop_dashboard.js') ,
                     'width': 6,
                     'height': 4,
                     'context': {
