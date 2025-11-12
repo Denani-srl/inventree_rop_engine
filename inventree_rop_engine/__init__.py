@@ -117,10 +117,15 @@ class ROPSuggestionPlugin(InvenTreePlugin, AppMixin, SettingsMixin, UrlsMixin, U
         
         return panels
     
-    def get_ui_features(self, request, context):
+    def get_ui_features(self, feature_type, request, context):
         """
         Define custom dashboard widgets.
         Shows urgent reorder suggestions.
+
+        Args:
+            feature_type: The type of UI feature being requested
+            request: The HTTP request object
+            context: Additional context data
         """
         # Build API URL manually for compatibility
         api_url = f'/api/plugin/{self.slug}/suggestions/'
