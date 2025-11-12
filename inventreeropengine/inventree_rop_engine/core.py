@@ -99,7 +99,7 @@ class inventreeropengine(AppMixin, ScheduleMixin, SettingsMixin, UrlsMixin, User
         # Only display this panel for the 'part' target
         if context.get('target_model') == 'part':
             part_id = context.get('target_id')
-            api_url = f'/api/plugin/{self.slug}/part/{part_id}/details/'
+            api_url = f'/plugin/{self.slug}/part/{part_id}/details/'
 
             panels.append({
                 'key': 'rop-analysis-panel',
@@ -123,7 +123,7 @@ class inventreeropengine(AppMixin, ScheduleMixin, SettingsMixin, UrlsMixin, User
 
         items = []
 
-        api_url = f'/api/plugin/{self.slug}/suggestions/'
+        api_url = f'/plugin/{self.slug}/suggestions/'
 
         items.append({
             'key': 'rop-urgent-suggestions',
