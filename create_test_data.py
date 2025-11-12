@@ -2,11 +2,21 @@
 """
 Script to create test ROP data for verification.
 Run this on the InvenTree server to create sample suggestions.
+
+Usage:
+  cd /opt/inventree/src/backend/InvenTree
+  source /opt/inventree/env/bin/activate
+  python /path/to/create_test_data.py
 """
 
 import os
 import sys
 import django
+
+# Add InvenTree to Python path if not already there
+inventree_path = '/opt/inventree/src/backend/InvenTree'
+if inventree_path not in sys.path:
+    sys.path.insert(0, inventree_path)
 
 # Setup Django environment
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'InvenTree.settings')
