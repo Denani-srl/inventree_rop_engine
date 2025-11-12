@@ -117,32 +117,35 @@ class ROPSuggestionPlugin(InvenTreePlugin, AppMixin, SettingsMixin, UrlsMixin, U
         
         return panels
     
-    def get_ui_features(self, feature_type, request, context):
+    def get_ui_features(self, feature_type, context, request):
         """
-        Define custom dashboard widgets.
-        Shows urgent reorder suggestions.
+        Return custom UI features based on the requested feature type.
 
         Args:
-            feature_type: The type of UI feature being requested
+            feature_type: The type of UI feature being requested (e.g., 'dashboard', 'panel')
+            context: Query parameters and additional context data
             request: The HTTP request object
-            context: Additional context data
+
+        Returns:
+            List of UI feature configurations for the requested feature type
         """
-        # Build API URL manually for compatibility
-        api_url = f'/api/plugin/{self.slug}/suggestions/'
-        
-        return {
-            'dashboard': {
-                'items': [
-                    {
-                        'title': 'Urgent Reorder Suggestions',
-                        'description': 'Parts requiring immediate procurement action',
-                        'javascript': f'/static/plugin/{self.slug}/rop_dashboard.js',
-                        'width': 6,
-                        'height': 4,
-                        'context': {
-                            'api_url': api_url,
-                        }
+        # Handle dashboard features
+        if feature_type == 'dashboard':
+            # Build API URL manually for compatibility
+            api_url = f'/api/plugin/{self.slug}/suggestions/'
+
+            return [
+                {
+                    'title': 'Urgent Reorder Suggestions',
+                    'description': 'Parts requiring immediate procurement action',
+                    'javascript': f'/static/plugin/{self.slug}/rop_dashboard.js',
+                    'width': 6,
+                    'height': 4,
+                    'context': {
+                        'api_url': api_url,
                     }
-                ]
-            }
-        }
+                }
+            ]
+
+        # Return empty list for other feature types
+        return []
