@@ -1,164 +1,196 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Group, SimpleGrid, Stack, Text, Title } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
-import { useQuery } from '@tanstack/react-query';
-
-import { t } from '@lingui/core/macro';
-import { LocalizedComponent } from './locale';
+import { useEffect, useState } from 'react';
+import { Alert, Badge, Card, Group, LoadingOverlay, SimpleGrid, Stack, Text, Title } from '@mantine/core';
+import { IconAlertTriangle, IconChartLine, IconTrendingUp } from '@tabler/icons-react';
 
 // Import for type checking
 import { checkPluginVersion, type InvenTreePluginContext } from '@inventreedb/ui';
-import { ApiEndpoints, apiUrl, ModelType } from '@inventreedb/ui';
+
+interface ROPDetails {
+    part_id: number;
+    part_name: string;
+    current_stock: number;
+    reorder_point: number;
+    safety_stock: number;
+    max_stock: number;
+    demand_rate: number;
+    lead_time_days: number;
+    suggested_order_qty: number;
+    days_until_stockout: number | null;
+    urgency_score: number;
+    status: string;
+    last_calculated: string;
+}
 
 /**
- * Render a custom panel with the provided context.
- * Refer to the InvenTree documentation for the context interface
- * https://docs.inventree.org/en/latest/plugins/mixins/ui/#plugin-context
+ * Render ROP Analysis Panel on Part Detail Page
  */
-function inventreeropenginePanel({
+function ROPAnalysisPanel({
     context
 }: {
     context: InvenTreePluginContext;
 }) {
+    const [ropData, setRopData] = useState<ROPDetails | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
 
-    // React hooks can be used within plugin components
+    const apiUrl = context.context?.api_url;
+    const partId = context.context?.part_id;
+
     useEffect(() => {
-        console.log("useEffect in plugin component:");
-        console.log("- Model:", context.model);
-        console.log("- ID:", context.id);
-    }, [context.model, context.id]);
-
-    // Memoize the part ID as passed via the context object
-    const partId = useMemo(() => {
-        return context.model == ModelType.part ? context.id || null: null;
-    }, [context.model, context.id]);
-
-    // Hello world - counter example
-    const [ counter, setCounter ] = useState<number>(0);
-
-    // Extract context information
-    const instance: string = useMemo(() => {
-        const data = context?.instance ?? {};
-        return JSON.stringify(data, null, 2);
-    }, [context.instance]);
-
-    // Fetch API data from the example API endpoint
-    // It will re-fetch when the partId changes
-    const apiQuery = useQuery(
-        {
-            queryKey: ['apiData', partId],
-            queryFn: async() => {
-                const url = `/plugin/inventree-rop-engine/example/`;
-
-                return context.api.get(url).then((response) => response.data).catch(() => {});
-            }
-        },
-        context.queryClient,
-    );
-
-    // Custom form to edit the selected part
-    const editPartForm = context.forms.edit({
-        url: apiUrl(ApiEndpoints.part_list, partId),
-        title: "Edit Part",
-        preFormContent: (
-            <Alert title="Custom Plugin Form" color="blue">
-                This is a custom form launched from within a plugin!
-            </Alert>
-        ),
-        fields: {
-            name: {},
-            description: {},
-            category: {},
-        },
-        successMessage: null,
-        onFormSuccess: () => {
-            notifications.show({
-                title: 'Success',
-                message: 'Part updated successfully!',
-                color: 'green',
-            });
+        if (!apiUrl || !partId) {
+            setError('Configuration error: Missing API URL or Part ID');
+            setLoading(false);
+            return;
         }
-    });
 
-    // Custom callback function example
-    const openForm = useCallback(() => {
-        editPartForm?.open();
-    }, [editPartForm]);
+        // Fetch ROP details for this part
+        fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin'
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                setRopData(data);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error('Error fetching ROP details:', err);
+                setError(`Failed to load ROP data: ${err.message}`);
+                setLoading(false);
+            });
+    }, [apiUrl, partId]);
 
-    // Navigation functionality example
-    const gotoDashboard = useCallback(() => {
-        context.navigate('/home');
-    }, [context]);
+    const getStatusColor = (status: string): string => {
+        switch (status.toLowerCase()) {
+            case 'critical': return 'red';
+            case 'low': return 'orange';
+            case 'adequate': return 'green';
+            case 'excess': return 'blue';
+            default: return 'gray';
+        }
+    };
+
+    if (loading) {
+        return (
+            <div style={{ position: 'relative', minHeight: 200 }}>
+                <LoadingOverlay visible={true} />
+                <Text ta="center" mt="xl">Loading ROP analysis...</Text>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <Alert icon={<IconAlertTriangle size="1rem" />} title="Error" color="red">
+                {error}
+            </Alert>
+        );
+    }
+
+    if (!ropData) {
+        return (
+            <Alert icon={<IconAlertTriangle size="1rem" />} title="No Data" color="yellow">
+                <Text>No ROP analysis available for this part. Ensure sufficient stock history exists.</Text>
+            </Alert>
+        );
+    }
 
     return (
-        <>
-        {editPartForm.modal}
-        <Stack gap="xs">
-        <Title c={context.theme.primaryColor}  order={3}>inventree rop engine</Title>
-        <Text>
-            This is a custom panel for the inventreeropengine plugin.
-        </Text>
-        <SimpleGrid cols={2}>
-            <Alert title='Translated Text' color='grape'>
-                <Stack gap='xs'>
-                    <Text>{t`Translated text, provided by custom code!`}</Text>
-                    <Text>{t`Translations are loaded automatically.`}</Text>
-                    <Text>{t`Fallback locale is used if no translation is available`}</Text>
-                </Stack>
-            </Alert>
-            <Group justify='apart' wrap='nowrap' gap='sm'>
-                <Button color='blue' onClick={gotoDashboard}>
-                    Go to Dashboard
-                </Button>
-                {partId && <Button color='green' onClick={openForm}>
-                    Edit  Part
-                </Button>}
-                <Button onClick={() => setCounter(counter + 1)}>
-                    Increment Counter
-                </Button>
-                <Text size='xl'>Counter: {counter}</Text>
+        <Stack gap="md">
+            <Group justify="space-between">
+                <Title order={3}>
+                    <IconChartLine size="1.5rem" style={{ marginRight: 8, verticalAlign: 'middle' }} />
+                    Reorder Point Analysis
+                </Title>
+                <Badge size="lg" color={getStatusColor(ropData.status)}>
+                    {ropData.status}
+                </Badge>
             </Group>
-            {instance ? (
-                <Alert title="Instance Data" color="blue">
-                    {instance}
-                </Alert>
-            ) : (
-                <Alert title="No Instance" color="yellow">
-                    No instance data available
+
+            <SimpleGrid cols={2} spacing="md">
+                <Card shadow="sm" padding="lg" radius="md" withBorder>
+                    <Text size="sm" c="dimmed">Current Stock</Text>
+                    <Text size="xl" fw={700}>{Math.round(ropData.current_stock)}</Text>
+                </Card>
+
+                <Card shadow="sm" padding="lg" radius="md" withBorder>
+                    <Text size="sm" c="dimmed">Reorder Point</Text>
+                    <Text size="xl" fw={700} c="blue">{Math.round(ropData.reorder_point)}</Text>
+                </Card>
+
+                <Card shadow="sm" padding="lg" radius="md" withBorder>
+                    <Text size="sm" c="dimmed">Safety Stock</Text>
+                    <Text size="xl" fw={700}>{Math.round(ropData.safety_stock)}</Text>
+                </Card>
+
+                <Card shadow="sm" padding="lg" radius="md" withBorder>
+                    <Text size="sm" c="dimmed">Max Stock Level</Text>
+                    <Text size="xl" fw={700}>{Math.round(ropData.max_stock)}</Text>
+                </Card>
+            </SimpleGrid>
+
+            <Card shadow="sm" padding="lg" radius="md" withBorder>
+                <Stack gap="sm">
+                    <Group justify="space-between">
+                        <Text fw={600}>Demand Analysis</Text>
+                        <IconTrendingUp size="1.2rem" />
+                    </Group>
+
+                    <Group justify="space-between">
+                        <Text size="sm">Daily Demand Rate:</Text>
+                        <Text fw={600}>{ropData.demand_rate.toFixed(2)} units/day</Text>
+                    </Group>
+
+                    <Group justify="space-between">
+                        <Text size="sm">Lead Time:</Text>
+                        <Text fw={600}>{ropData.lead_time_days} days</Text>
+                    </Group>
+
+                    {ropData.days_until_stockout !== null && (
+                        <Group justify="space-between">
+                            <Text size="sm">Days Until Stockout:</Text>
+                            <Text
+                                fw={700}
+                                c={ropData.days_until_stockout <= 7 ? 'red' : ropData.days_until_stockout <= 14 ? 'orange' : 'green'}
+                            >
+                                {ropData.days_until_stockout <= 0 ? 'NOW' : `${Math.round(ropData.days_until_stockout)} days`}
+                            </Text>
+                        </Group>
+                    )}
+
+                    <Group justify="space-between">
+                        <Text size="sm">Urgency Score:</Text>
+                        <Badge color={ropData.urgency_score >= 80 ? 'red' : ropData.urgency_score >= 60 ? 'orange' : 'green'}>
+                            {Math.round(ropData.urgency_score)}
+                        </Badge>
+                    </Group>
+                </Stack>
+            </Card>
+
+            {ropData.suggested_order_qty > 0 && (
+                <Alert icon={<IconAlertTriangle size="1rem" />} title="Reorder Recommended" color="orange">
+                    <Text>
+                        Suggested Order Quantity: <Text component="span" fw={700} c="green">{Math.round(ropData.suggested_order_qty)}</Text> units
+                    </Text>
+                    <Text size="sm" c="dimmed" mt="xs">
+                        Last calculated: {new Date(ropData.last_calculated).toLocaleString()}
+                    </Text>
                 </Alert>
             )}
-            {apiQuery.isFetched && apiQuery.data && (
-            <Alert color="green" title="API Query Data">
-                    {apiQuery.isFetching || apiQuery.isLoading ? (
-                    <Text>Loading...</Text>
-                    ) : (
-                    <Stack gap='xs'>
-                        <Text>Part Count: {apiQuery.data.part_count}</Text>
-                        <Text>Today: {apiQuery.data.today}</Text>
-                        <Text>Random Text: {apiQuery.data.random_text}</Text>
-                        <Button
-                            disabled={apiQuery.isFetching || apiQuery.isLoading}
-                            onClick={() => apiQuery.refetch()}>
-                            Reload Data
-                        </Button>
-                    </Stack>
-                )}
-            </Alert>
-            )}
-        </SimpleGrid>
         </Stack>
-        </>
     );
 }
 
-
-// This is the function which is called by InvenTree to render the actual panel component
-export function renderinventreeropenginePanel(context: InvenTreePluginContext) {
+// This is the function which is called by InvenTree to render the actual panel
+export function renderROPAnalysisPanel(context: InvenTreePluginContext) {
     checkPluginVersion(context);
-
-    return (
-        <LocalizedComponent locale={context.locale}>
-            <inventreeropenginePanel context={context} />
-        </LocalizedComponent>
-    );
+    return <ROPAnalysisPanel context={context} />;
 }
