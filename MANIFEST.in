@@ -1,0 +1,13 @@
+# Include documentation
+include README.md
+include LICENSE
+include requirements.txt
+
+# Include UI assets
+recursive-include inventree_rop_engine/ui *.js *.html *.css
+
+# Exclude unnecessary files
+global-exclude *.pyc
+global-exclude __pycache__
+global-exclude *.pyo
+global-exclude .git*
