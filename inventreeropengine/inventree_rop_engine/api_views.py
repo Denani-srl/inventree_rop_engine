@@ -13,10 +13,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
 from part.models import Part
-from .models import ROPPolicy, ROPSuggestion, DemandStatistics
-from .rop_engine import ROPCalculationEngine
+# TODO: Temporarily commented out until migrations work
+# from .models import ROPPolicy, ROPSuggestion, DemandStatistics
+# from .rop_engine import ROPCalculationEngine
 
 import logging
 
@@ -220,7 +222,3 @@ class GeneratePOFromSuggestionView(APIView):
                 {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-
-# Import timezone at the top if not already imported
-from django.utils import timezone
