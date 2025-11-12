@@ -1,1 +1,3 @@
-recursive-include inventree_rop_engine/static *
+graft inventree_rop_engine/static
+global-exclude *.pyc
+global-exclude __pycache__
