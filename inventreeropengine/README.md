@@ -30,12 +30,16 @@ Detailed ROP metrics displayed on each part page:
 
 ## Installation
 
+### ⚠️ IMPORTANT: Build Frontend First!
+
+**You MUST build the frontend before installing the plugin**, otherwise pip installation will fail because the static files won't exist.
+
 ### Prerequisites
 - InvenTree 0.18.0 or later
 - Node.js 18+ and npm (for building the frontend)
 - Python 3.9+
 
-### Step 1: Build the Frontend
+### Step 1: Build the Frontend (REQUIRED)
 
 ```bash
 cd inventreeropengine/frontend
@@ -44,6 +48,12 @@ npm run build
 ```
 
 This compiles the React/TypeScript frontend and outputs the built files to `inventree_rop_engine/static/`.
+
+**Verify the build succeeded:**
+```bash
+ls -la ../inventree_rop_engine/static/
+# You should see Dashboard.js, Panel.js, and Settings.js
+```
 
 ### Step 2: Install the Plugin
 
