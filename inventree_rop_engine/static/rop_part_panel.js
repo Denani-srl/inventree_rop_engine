@@ -478,7 +478,7 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// Initialize panel when DOM is ready
-if (typeof renderPartPanel === 'undefined') {
-    window.renderPartPanel = renderROPPartPanel;
+// Export as renderPanel for InvenTree compatibility
+function renderPanel(target, context) {
+    return renderROPPartPanel(target, context);
 }

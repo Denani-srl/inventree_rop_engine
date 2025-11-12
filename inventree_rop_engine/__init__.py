@@ -109,7 +109,7 @@ class ROPSuggestionPlugin(InvenTreePlugin, AppMixin, SettingsMixin, UrlsMixin, U
                 'key': 'rop-analysis-panel',
                 'title': 'ROP Analysis',
                 'description': 'Reorder Point analysis and procurement suggestions',
-                'source': self.plugin_static_file('rop_part_panel.js'),
+                'source': 'rop_part_panel.js:renderPanel',
                 'context': {
                     'part_id': instance.pk,
                     'api_url': api_url,
@@ -140,7 +140,7 @@ class ROPSuggestionPlugin(InvenTreePlugin, AppMixin, SettingsMixin, UrlsMixin, U
                     'key': 'rop-urgent-suggestions',
                     'title': 'Urgent Reorder Suggestions',
                     'description': 'Parts requiring immediate procurement action',
-                    'source': self.plugin_static_file('rop_dashboard.js') ,
+                    'source': 'rop_dashboard.js:renderDashboardItem',
                     'width': 6,
                     'height': 4,
                     'context': {
