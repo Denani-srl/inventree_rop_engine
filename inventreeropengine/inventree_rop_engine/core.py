@@ -74,9 +74,12 @@ class inventreeropengine(AppMixin, ScheduleMixin, SettingsMixin, UrlsMixin, User
     def setup_urls(self):
         """Configure custom URL endpoints for this plugin."""
         from django.urls import path
-        from . import api_views
+        from . import views, api_views
 
         return [
+            # Test endpoint
+            path('test/', views.TestView.as_view(), name='test'),
+            # ROP endpoints
             path('suggestions/', api_views.ROPSuggestionsView.as_view(), name='rop-suggestions'),
             path('part/<int:pk>/details/', api_views.PartROPDetailsView.as_view(), name='part-rop-details'),
             path('part/<int:pk>/calculate/', api_views.CalculatePartROPView.as_view(), name='calculate-part-rop'),
