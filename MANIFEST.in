@@ -3,8 +3,8 @@ include README.md
 include LICENSE
 include requirements.txt
 
-# Include UI assets
-recursive-include inventree_rop_engine/ui *.js *.html *.css
+# Include static assets
+recursive-include inventree_rop_engine/static *.js *.html *.css
 
 # Exclude unnecessary files
 global-exclude *.pyc

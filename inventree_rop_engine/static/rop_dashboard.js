@@ -219,7 +219,7 @@ function getCookie(name) {
     return cookieValue;
 }
 
-// Initialize widget when DOM is ready
-if (typeof renderDashboardItem === 'undefined') {
-    window.renderDashboardItem = renderROPDashboard;
+// Export as renderDashboardItem for InvenTree compatibility
+function renderDashboardItem(target, context) {
+    return renderROPDashboard(target, context);
 }
