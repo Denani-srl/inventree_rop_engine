@@ -350,7 +350,7 @@ class ROPSuggestion(models.Model):
         if self.projected_stock <= 0:
             severity_score = 30.0
         else:
-            shortage_ratio = (self.calculated_rop - self.projected_stock) / self.calculated_rop
+            shortage_ratio = (float(self.calculated_rop) - float(self.projected_stock)) / float(self.calculated_rop)
             severity_score = min(30.0, shortage_ratio * 30)
         
         # Lead time score (0-20 points)
