@@ -131,8 +131,7 @@ class inventreeropengine(AppMixin, ScheduleMixin, SettingsMixin, UrlsMixin, User
             'description': 'Parts requiring immediate procurement action',
             'icon': 'ti:alert-triangle:outline',
             'source': self.plugin_static_file('Dashboard.js:renderROPDashboardItem'),
-            'width': 6,
-            'height': 4,
+            'options': {'width': 6, 'height': 4},
             'context': {
                 'settings': self.get_settings_dict(),
                 'api_url': api_url,
