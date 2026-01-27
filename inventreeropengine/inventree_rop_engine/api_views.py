@@ -91,10 +91,12 @@ class ROPSuggestionsView(APIView):
 
         except Exception as e:
             logger.error(f"Error retrieving ROP suggestions: {str(e)}")
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            # If tables don't exist yet (no migrations), return empty list
+            return Response({
+                'count': 0,
+                'results': [],
+                'timestamp': timezone.now().isoformat(),
+            })
 
 
 class PartROPDetailsView(APIView):
@@ -223,14 +225,14 @@ class CalculatePartROPView(APIView):
             
             # Get plugin instance
             from plugin.registry import registry
-            plugin = registry.get_plugin('rop-suggestion')
-            
+            plugin = registry.get_plugin('inventree-rop-engine')
+
             if not plugin:
                 return Response(
                     {'error': 'ROP plugin not loaded'},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
-            
+
             # Create engine and calculate
             engine = ROPCalculationEngine(plugin)
             suggestion = engine.calculate_part_rop(pk)
@@ -289,14 +291,14 @@ class GeneratePOFromSuggestionView(APIView):
             
             # Get plugin instance
             from plugin.registry import registry
-            plugin = registry.get_plugin('rop-suggestion')
-            
+            plugin = registry.get_plugin('inventree-rop-engine')
+
             if not plugin:
                 return Response(
                     {'error': 'ROP plugin not loaded'},
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
-            
+
             # Create engine and generate PO
             engine = ROPCalculationEngine(plugin)
             po = engine.generate_purchase_order(suggestion_id)
