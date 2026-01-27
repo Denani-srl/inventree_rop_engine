@@ -14,7 +14,7 @@ from decimal import Decimal
 import math
 import logging
 
-from django.db.models import Sum, Q, Count
+from django.db.models import Sum, Q, Count, F
 from django.utils import timezone
 
 logger = logging.getLogger('inventree')
@@ -394,7 +394,7 @@ class ROPCalculationEngine:
                     PurchaseOrder.COMPLETE    # Status 30 - But not yet received
                 ]
             ).exclude(
-                received__gte=models.F('quantity')  # Exclude fully received lines
+                received__gte=F('quantity')  # Exclude fully received lines
             )
             
             total_inbound = Decimal(0)
