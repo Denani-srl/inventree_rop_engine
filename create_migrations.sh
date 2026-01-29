@@ -66,7 +66,7 @@ except Exception as e:
 print("\n✅ Verifying database tables...")
 from django.db import connection
 with connection.cursor() as cursor:
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%rop%' ORDER BY name")
+    cursor.execute("SELECT tablename FROM pg_tables WHERE tablename LIKE '%rop%' ORDER BY tablename")
     tables = cursor.fetchall()
     if tables:
         print("✓ Tables created:")
