@@ -5,20 +5,41 @@ import { IconAlertTriangle, IconChartLine, IconTrendingUp } from '@tabler/icons-
 // Import for type checking
 import { checkPluginVersion, type InvenTreePluginContext } from '@inventreedb/ui';
 
-interface ROPDetails {
+interface ROPApiResponse {
     part_id: number;
-    part_name: string;
-    current_stock: number;
-    reorder_point: number;
-    safety_stock: number;
-    max_stock: number;
-    demand_rate: number;
-    lead_time_days: number;
-    suggested_order_qty: number;
-    days_until_stockout: number | null;
-    urgency_score: number;
-    status: string;
-    last_calculated: string;
+    part_name?: string;
+    has_policy: boolean;
+    message?: string;
+    current_stock?: number;
+    on_order?: number;
+    policy?: {
+        enabled: boolean;
+        safety_stock: number;
+        use_calculated_safety_stock: boolean;
+        service_level: number;
+        target_stock_multiplier: number;
+        last_calculated_rop: number | null;
+        last_calculated_demand_rate: number | null;
+        last_calculation_date: string | null;
+    };
+    demand_statistics?: {
+        mean_daily_demand: number;
+        std_dev_daily_demand: number;
+        total_removals: number;
+        analysis_period_days: number;
+        calculated_safety_stock: number | null;
+        calculation_date: string;
+    };
+    suggestion?: {
+        id: number;
+        suggested_order_qty: number;
+        projected_stock: number;
+        calculated_rop: number;
+        urgency_score: number;
+        days_until_stockout: number | null;
+        stockout_date: string | null;
+        created_date: string;
+    };
 }
 
 /**
@@ -29,7 +50,7 @@ function ROPAnalysisPanel({
 }: {
     context: InvenTreePluginContext;
 }) {
-    const [ropData, setRopData] = useState<ROPDetails | null>(null);
+    const [ropData, setRopData] = useState<ROPApiResponse | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -68,14 +89,11 @@ function ROPAnalysisPanel({
             });
     }, [apiUrl, partId]);
 
-    const getStatusColor = (status: string): string => {
-        switch (status.toLowerCase()) {
-            case 'critical': return 'red';
-            case 'low': return 'orange';
-            case 'adequate': return 'green';
-            case 'excess': return 'blue';
-            default: return 'gray';
-        }
+    const getUrgencyColor = (score: number): string => {
+        if (score >= 80) return 'red';
+        if (score >= 60) return 'orange';
+        if (score >= 40) return 'yellow';
+        return 'green';
     };
 
     if (loading) {
@@ -95,13 +113,17 @@ function ROPAnalysisPanel({
         );
     }
 
-    if (!ropData) {
+    if (!ropData || !ropData.has_policy) {
         return (
-            <Alert icon={<IconAlertTriangle size="1rem" />} title="No Data" color="yellow">
-                <Text>No ROP analysis available for this part. Ensure sufficient stock history exists.</Text>
+            <Alert icon={<IconAlertTriangle size="1rem" />} title="No ROP Policy" color="yellow">
+                <Text>{ropData?.message || 'No ROP policy configured for this part.'}</Text>
             </Alert>
         );
     }
+
+    const policy = ropData.policy;
+    const stats = ropData.demand_statistics;
+    const suggestion = ropData.suggestion;
 
     return (
         <Stack gap="md">
@@ -110,79 +132,128 @@ function ROPAnalysisPanel({
                     <IconChartLine size="1.5rem" style={{ marginRight: 8, verticalAlign: 'middle' }} />
                     Reorder Point Analysis
                 </Title>
-                <Badge size="lg" color={getStatusColor(ropData.status)}>
-                    {ropData.status}
-                </Badge>
+                {suggestion && (
+                    <Badge size="lg" color={getUrgencyColor(suggestion.urgency_score)}>
+                        Urgency: {Math.round(suggestion.urgency_score)}
+                    </Badge>
+                )}
             </Group>
 
             <SimpleGrid cols={2} spacing="md">
                 <Card shadow="sm" padding="lg" radius="md" withBorder>
                     <Text size="sm" c="dimmed">Current Stock</Text>
-                    <Text size="xl" fw={700}>{Math.round(ropData.current_stock)}</Text>
+                    <Text size="xl" fw={700}>{Math.round(ropData.current_stock || 0)}</Text>
                 </Card>
 
                 <Card shadow="sm" padding="lg" radius="md" withBorder>
-                    <Text size="sm" c="dimmed">Reorder Point</Text>
-                    <Text size="xl" fw={700} c="blue">{Math.round(ropData.reorder_point)}</Text>
+                    <Text size="sm" c="dimmed">Reorder Point (ROP)</Text>
+                    <Text size="xl" fw={700} c="blue">
+                        {policy?.last_calculated_rop != null ? Math.round(policy.last_calculated_rop) : 'Not calculated'}
+                    </Text>
                 </Card>
 
                 <Card shadow="sm" padding="lg" radius="md" withBorder>
                     <Text size="sm" c="dimmed">Safety Stock</Text>
-                    <Text size="xl" fw={700}>{Math.round(ropData.safety_stock)}</Text>
+                    <Text size="xl" fw={700}>
+                        {policy?.use_calculated_safety_stock && stats?.calculated_safety_stock != null
+                            ? Math.round(stats.calculated_safety_stock)
+                            : Math.round(policy?.safety_stock || 0)}
+                    </Text>
                 </Card>
 
                 <Card shadow="sm" padding="lg" radius="md" withBorder>
-                    <Text size="sm" c="dimmed">Max Stock Level</Text>
-                    <Text size="xl" fw={700}>{Math.round(ropData.max_stock)}</Text>
+                    <Text size="sm" c="dimmed">On Order</Text>
+                    <Text size="xl" fw={700}>{Math.round(ropData.on_order || 0)}</Text>
                 </Card>
             </SimpleGrid>
 
-            <Card shadow="sm" padding="lg" radius="md" withBorder>
-                <Stack gap="sm">
-                    <Group justify="space-between">
-                        <Text fw={600}>Demand Analysis</Text>
-                        <IconTrendingUp size="1.2rem" />
-                    </Group>
-
-                    <Group justify="space-between">
-                        <Text size="sm">Daily Demand Rate:</Text>
-                        <Text fw={600}>{ropData.demand_rate.toFixed(2)} units/day</Text>
-                    </Group>
-
-                    <Group justify="space-between">
-                        <Text size="sm">Lead Time:</Text>
-                        <Text fw={600}>{ropData.lead_time_days} days</Text>
-                    </Group>
-
-                    {ropData.days_until_stockout !== null && (
+            {stats && (
+                <Card shadow="sm" padding="lg" radius="md" withBorder>
+                    <Stack gap="sm">
                         <Group justify="space-between">
-                            <Text size="sm">Days Until Stockout:</Text>
-                            <Text
-                                fw={700}
-                                c={ropData.days_until_stockout <= 7 ? 'red' : ropData.days_until_stockout <= 14 ? 'orange' : 'green'}
-                            >
-                                {ropData.days_until_stockout <= 0 ? 'NOW' : `${Math.round(ropData.days_until_stockout)} days`}
-                            </Text>
+                            <Text fw={600}>Demand Analysis</Text>
+                            <IconTrendingUp size="1.2rem" />
                         </Group>
+
+                        <Group justify="space-between">
+                            <Text size="sm">Daily Demand Rate:</Text>
+                            <Text fw={600}>{stats.mean_daily_demand.toFixed(2)} units/day</Text>
+                        </Group>
+
+                        <Group justify="space-between">
+                            <Text size="sm">Demand Std Dev:</Text>
+                            <Text fw={600}>{stats.std_dev_daily_demand.toFixed(2)}</Text>
+                        </Group>
+
+                        <Group justify="space-between">
+                            <Text size="sm">Analysis Period:</Text>
+                            <Text fw={600}>{stats.analysis_period_days} days ({stats.total_removals} events)</Text>
+                        </Group>
+
+                        <Group justify="space-between">
+                            <Text size="sm">Service Level:</Text>
+                            <Text fw={600}>{policy?.service_level}%</Text>
+                        </Group>
+                    </Stack>
+                </Card>
+            )}
+
+            {suggestion && (
+                <Card shadow="sm" padding="lg" radius="md" withBorder>
+                    <Stack gap="sm">
+                        <Group justify="space-between">
+                            <Text fw={600}>Active Suggestion</Text>
+                            <Badge color={getUrgencyColor(suggestion.urgency_score)}>
+                                Score: {Math.round(suggestion.urgency_score)}
+                            </Badge>
+                        </Group>
+
+                        <Group justify="space-between">
+                            <Text size="sm">Suggested Order Qty:</Text>
+                            <Text fw={700} c="green">{Math.round(suggestion.suggested_order_qty)}</Text>
+                        </Group>
+
+                        <Group justify="space-between">
+                            <Text size="sm">Projected Stock:</Text>
+                            <Text fw={600}>{Math.round(suggestion.projected_stock)}</Text>
+                        </Group>
+
+                        {suggestion.days_until_stockout != null && (
+                            <Group justify="space-between">
+                                <Text size="sm">Days Until Stockout:</Text>
+                                <Text
+                                    fw={700}
+                                    c={suggestion.days_until_stockout <= 7 ? 'red' : suggestion.days_until_stockout <= 14 ? 'orange' : 'green'}
+                                >
+                                    {suggestion.days_until_stockout <= 0 ? 'NOW' : `${Math.round(suggestion.days_until_stockout)} days`}
+                                </Text>
+                            </Group>
+                        )}
+
+                        {suggestion.stockout_date && (
+                            <Group justify="space-between">
+                                <Text size="sm">Stockout Date:</Text>
+                                <Text fw={600}>{new Date(suggestion.stockout_date).toLocaleDateString()}</Text>
+                            </Group>
+                        )}
+                    </Stack>
+                </Card>
+            )}
+
+            {!suggestion && policy?.last_calculated_rop != null && (
+                <Alert icon={<IconChartLine size="1rem" />} title="Stock Status" color="green">
+                    <Text>Stock level is adequate. No reorder needed at this time.</Text>
+                    {policy.last_calculation_date && (
+                        <Text size="sm" c="dimmed" mt="xs">
+                            Last calculated: {new Date(policy.last_calculation_date).toLocaleString()}
+                        </Text>
                     )}
+                </Alert>
+            )}
 
-                    <Group justify="space-between">
-                        <Text size="sm">Urgency Score:</Text>
-                        <Badge color={ropData.urgency_score >= 80 ? 'red' : ropData.urgency_score >= 60 ? 'orange' : 'green'}>
-                            {Math.round(ropData.urgency_score)}
-                        </Badge>
-                    </Group>
-                </Stack>
-            </Card>
-
-            {ropData.suggested_order_qty > 0 && (
-                <Alert icon={<IconAlertTriangle size="1rem" />} title="Reorder Recommended" color="orange">
-                    <Text>
-                        Suggested Order Quantity: <Text component="span" fw={700} c="green">{Math.round(ropData.suggested_order_qty)}</Text> units
-                    </Text>
-                    <Text size="sm" c="dimmed" mt="xs">
-                        Last calculated: {new Date(ropData.last_calculated).toLocaleString()}
-                    </Text>
+            {!stats && !suggestion && (
+                <Alert icon={<IconAlertTriangle size="1rem" />} title="No Data" color="gray">
+                    <Text>No demand statistics yet. ROP calculations require stock movement history.</Text>
                 </Alert>
             )}
         </Stack>
