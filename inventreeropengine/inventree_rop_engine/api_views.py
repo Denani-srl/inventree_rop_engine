@@ -194,12 +194,14 @@ class PartROPDetailsView(APIView):
             return Response(response_data)
 
         except Exception as e:
+            import traceback
             logger.error(f"Error retrieving part ROP details: {str(e)}")
-            # If tables don't exist yet (no migrations), return empty state
+            logger.error(traceback.format_exc())
             return Response({
                 'part_id': pk,
                 'has_policy': False,
-                'message': 'ROP plugin not yet configured - run migrations',
+                'error': str(e),
+                'message': f'Error: {str(e)}',
             })
 
 
