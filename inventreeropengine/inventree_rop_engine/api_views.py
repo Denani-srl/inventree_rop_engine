@@ -195,10 +195,12 @@ class PartROPDetailsView(APIView):
 
         except Exception as e:
             logger.error(f"Error retrieving part ROP details: {str(e)}")
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            # If tables don't exist yet (no migrations), return empty state
+            return Response({
+                'part_id': pk,
+                'has_policy': False,
+                'message': 'ROP plugin not yet configured - run migrations',
+            })
 
 
 class CalculatePartROPView(APIView):
