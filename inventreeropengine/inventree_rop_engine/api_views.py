@@ -152,8 +152,8 @@ class PartROPDetailsView(APIView):
                     'last_calculated_demand_rate': float(policy.last_calculated_demand_rate) if policy.last_calculated_demand_rate else None,
                     'last_calculation_date': policy.last_calculation_date.isoformat() if policy.last_calculation_date else None,
                 },
-                'current_stock': float(part.get_stock_count()),
-                'on_order': float(part.quantity_being_built()) if hasattr(part, 'quantity_being_built') else 0,
+                'current_stock': float(getattr(part, 'total_stock', 0) or 0),
+                'on_order': float(getattr(part, 'quantity_being_built', 0) or 0),
             }
 
             # Add demand statistics
